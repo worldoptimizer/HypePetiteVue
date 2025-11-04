@@ -2,21 +2,37 @@
 
 This directory contains working examples demonstrating various features of HypePetiteVue.
 
+## 🎭 About the Hype Simulator
+
+Since these are standalone HTML examples (not actual Tumult Hype documents), they use **HypeSimulator.js** - a mock implementation of the Hype runtime API. The simulator:
+
+- Creates a fake `HYPE` global object with `HYPE.documents`
+- Provides a mock `hypeDocument` with all key API methods
+- Fires `HypeDocumentLoad` and `HypeSceneLoad` events
+- Simulates scene navigation and timeline control
+- Enables testing HypePetiteVue without Tumult Hype
+
+**Important:** In real Hype projects, you don't need the simulator! The real Hype runtime provides all these features natively.
+
 ## Running the Examples
 
 These examples can be opened directly in your web browser. Simply open any `.html` file in your browser to see it in action.
 
-**Note:** These standalone examples use relative paths to load `HypePetiteVue.js` from the parent directory. Make sure the file structure is intact:
+**Note:** These standalone examples use relative paths to load files from the parent directory. Make sure the file structure is intact:
 
 ```
 HypePetiteVue/
 ├── HypePetiteVue.js
+├── HypeSimulator.js (for examples only)
 └── examples/
     ├── basic-counter.html
     ├── todo-list.html
     ├── components.html
+    ├── hype-integration.html
     └── README.md
 ```
+
+Look for the green "🎭 Hype Simulator Active" badge in the top-right corner of each example - this confirms the simulator is running.
 
 ## Examples Overview
 
@@ -86,6 +102,34 @@ HypePetiteVue/
 - Expandable card component
 - Interactive tag component
 - Multiple instances demonstrating independence
+
+---
+
+### 4. Hype Integration (`hype-integration.html`)
+
+**What it demonstrates:**
+- `createHypeStore()` with `$hype` utilities
+- Scene navigation from Vue (`$hype.showScene()`)
+- Timeline control (`startTimeline()`, `pauseTimeline()`, `continueTimeline()`)
+- Element property animation (`setElementProperty()`)
+- Reactive state triggering Hype animations
+- Real-time activity logging
+- Complete Hype API integration
+
+**Perfect for:**
+- Understanding Hype + Vue integration
+- Building interactive Hype experiences
+- Controlling timelines from user input
+- Scene-based navigation
+- Combining Hype animations with Vue reactivity
+
+**Key features:**
+- Scene navigation with transition effects
+- Timeline playback controls
+- Score system triggering animations at milestones
+- Animated box with rotation based on score
+- Live activity log showing all API calls
+- Demonstrates all `$hype` utility methods
 
 ---
 

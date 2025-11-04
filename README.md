@@ -731,6 +731,23 @@ Petite Vue supports all modern browsers. IE11 is not supported.
 
 ---
 
+## Examples
+
+The `/examples` directory contains working HTML demonstrations:
+
+- **basic-counter.html** - Simple reactive counter
+- **todo-list.html** - Full-featured todo application
+- **components.html** - Reusable component patterns
+- **hype-integration.html** - Complete Hype API integration demo
+
+These examples use **HypeSimulator.js**, a mock implementation of the Hype runtime that allows the examples to run standalone in any browser without Tumult Hype. The simulator provides all key hypeDocument methods and fires the appropriate events.
+
+**Note:** In real Hype projects, you don't need the simulator - use the actual Hype runtime!
+
+Open any example file in your browser to see HypePetiteVue in action. Check the browser console (F12) for detailed logging.
+
+---
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.

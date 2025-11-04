@@ -63,11 +63,27 @@
             margin-top: 20px;
             border-left: 4px solid #007bff;
         }
+        .simulator-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+        }
     </style>
+    <!-- Load Hype Simulator first to create mock Hype environment -->
+    <script src="../HypeSimulator.js"></script>
     <!-- Load HypePetiteVue which will auto-load Petite Vue -->
     <script src="../HypePetiteVue.js"></script>
 </head>
 <body>
+    <div class="simulator-badge">🎭 Hype Simulator Active</div>
     <div class="container">
         <h1>Basic Counter Example</h1>
         <p class="subtitle">A simple counter using HypePetiteVue</p>

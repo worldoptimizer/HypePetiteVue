@@ -113,7 +113,21 @@
             font-weight: 600;
             margin: 4px;
         }
+        .simulator-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+        }
     </style>
+    <script src="../HypeSimulator.js"></script>
     <script src="../HypePetiteVue.js"></script>
     <script>
         // Register reusable components when the page loads
@@ -166,6 +180,7 @@
     </script>
 </head>
 <body>
+    <div class="simulator-badge">🎭 Hype Simulator Active</div>
     <div class="container">
         <h1>🧩 Component Examples</h1>
         <p class="subtitle">Reusable components with HypePetiteVue</p>
