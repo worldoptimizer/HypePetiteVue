@@ -1,0 +1,43 @@
+{
+  "name": "hype-petite-vue",
+  "version": "1.0.0",
+  "description": "A lightweight integration layer for using Petite Vue with Tumult Hype",
+  "main": "HypePetiteVue.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/worldoptimizer/HypePetiteVue.git"
+  },
+  "keywords": [
+    "tumult-hype",
+    "hype",
+    "petite-vue",
+    "vue",
+    "reactive",
+    "progressive-enhancement",
+    "animation",
+    "interactive",
+    "ui",
+    "component"
+  ],
+  "author": "Community Driven",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/worldoptimizer/HypePetiteVue/issues"
+  },
+  "homepage": "https://github.com/worldoptimizer/HypePetiteVue#readme",
+  "peerDependencies": {
+    "petite-vue": "^0.4.0"
+  },
+  "devDependencies": {},
+  "files": [
+    "HypePetiteVue.js",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "examples/"
+  ],
+  "cdn": "unpkg"
+}
