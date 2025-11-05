@@ -26,6 +26,7 @@
             components: {},
             _petiteVueLoaded: false,
             _loadingPromise: null,
+            _globalAppMounted: false,
 
             /**
              * Initialize HypePetiteVue for a Hype document
@@ -38,9 +39,35 @@
                 const docId = hypeDocument.documentId();
 
                 return this.loadPetiteVue().then(() => {
+                    // Delay mounting to allow other HypeDocumentLoad callbacks to register stores/components
+                    setTimeout(() => {
+                        this._autoMount();
+                    }, 50);
+
                     console.log('[HypePetiteVue] Initialized for document:', docId);
                     return this;
                 });
+            },
+
+            /**
+             * Auto-mount Petite Vue if not already mounted
+             * @private
+             */
+            _autoMount: function() {
+                if (typeof PetiteVue !== 'undefined' && !this._globalAppMounted) {
+                    console.log('[HypePetiteVue] Auto-mounting Petite Vue globally');
+
+                    // Create app with stores and components if they exist
+                    const appConfig = {};
+                    if (Object.keys(this.stores).length > 0) {
+                        appConfig.$store = this.stores;
+                    }
+                    Object.assign(appConfig, this.components);
+
+                    PetiteVue.createApp(appConfig).mount();
+                    this._globalAppMounted = true;
+                    console.log('[HypePetiteVue] Petite Vue mounted and processing v-scope directives');
+                }
             },
 
             /**
@@ -161,9 +188,10 @@
              * Create a Hype-aware reactive store that can interact with Hype timelines
              * @param {Object} hypeDocument - The Hype document object
              * @param {Object} state - Initial state
+             * @param {string} name - Optional store name (defaults to using as root $store)
              * @returns {Promise} Promise that resolves with reactive store
              */
-            createHypeStore: function(hypeDocument, state) {
+            createHypeStore: function(hypeDocument, state, name) {
                 return this.loadPetiteVue().then(() => {
                     if (typeof PetiteVue === 'undefined' || typeof PetiteVue.reactive === 'undefined') {
                         throw new Error('PetiteVue.reactive is not available');
@@ -197,7 +225,24 @@
                         }
                     });
 
-                    return PetiteVue.reactive(hypeAwareState);
+                    const reactiveStore = PetiteVue.reactive(hypeAwareState);
+
+                    // Register store - if no name provided, merge into root $store
+                    if (name) {
+                        this.stores[name] = reactiveStore;
+                        console.log('[HypePetiteVue] Hype-aware store created:', name);
+                    } else {
+                        // Merge into root $store for direct access
+                        Object.assign(this.stores, reactiveStore);
+                        console.log('[HypePetiteVue] Hype-aware store created and merged into $store');
+                    }
+
+                    // Trigger auto-mount if not already mounted
+                    if (this._petiteVueLoaded && !this._globalAppMounted) {
+                        setTimeout(() => this._autoMount(), 10);
+                    }
+
+                    return reactiveStore;
                 });
             },
 
