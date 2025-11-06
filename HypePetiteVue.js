@@ -15,6 +15,26 @@
     const PETITE_VUE_ES_CDN = 'https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js';
 
     /**
+     * Inject CSS to hide unrendered Petite Vue content
+     * Prevents FOUC (Flash of Unstyled Content) before Petite Vue mounts
+     */
+    function injectCloakStyles() {
+        if (!document.getElementById('hype-petite-vue-cloak-styles')) {
+            const style = document.createElement('style');
+            style.id = 'hype-petite-vue-cloak-styles';
+            style.textContent = `
+                [v-cloak], [v-scope]:not([data-v-mounted]) {
+                    display: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Inject cloak styles immediately
+    injectCloakStyles();
+
+    /**
      * HypePetiteVue - Extension for integrating Petite Vue with Tumult Hype
      * @namespace
      */
@@ -39,12 +59,10 @@
                 const docId = hypeDocument.documentId();
 
                 return this.loadPetiteVue().then(() => {
-                    // Delay mounting to allow other HypeDocumentLoad callbacks to register stores/components
-                    setTimeout(() => {
-                        this._autoMount();
-                    }, 50);
-
+                    // Don't mount immediately - wait for HypeScenePrepareForDisplay
+                    // This prevents FOUC by mounting before the scene is visible
                     console.log('[HypePetiteVue] Initialized for document:', docId);
+                    console.log('[HypePetiteVue] Waiting for HypeScenePrepareForDisplay to mount');
                     return this;
                 });
             },
@@ -69,6 +87,14 @@
                     console.log('[HypePetiteVue] App config:', appConfig);
                     window.PetiteVue.createApp(appConfig).mount();
                     this._globalAppMounted = true;
+
+                    // Mark all v-scope elements as mounted to show them (remove FOUC)
+                    setTimeout(() => {
+                        document.querySelectorAll('[v-scope]').forEach(el => {
+                            el.setAttribute('data-v-mounted', '');
+                        });
+                    }, 0);
+
                     console.log('[HypePetiteVue] Petite Vue mounted and processing v-scope directives');
                 }
             },
@@ -298,6 +324,17 @@
             // Auto-initialize if window.HypePetiteVueAutoInit is set to true
             if (window.HypePetiteVueAutoInit !== false) {
                 HypePetiteVue.init(hypeDocument, element, event);
+            }
+        }
+    });
+
+    window.HYPE_eventListeners.push({
+        type: "HypeScenePrepareForDisplay",
+        callback: function(hypeDocument, element, event) {
+            // Mount Petite Vue before scene is displayed to prevent FOUC
+            if (HypePetiteVue._petiteVueLoaded && !HypePetiteVue._globalAppMounted) {
+                console.log('[HypePetiteVue] HypeScenePrepareForDisplay - mounting before scene display');
+                HypePetiteVue._autoMount();
             }
         }
     });

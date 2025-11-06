@@ -88,8 +88,8 @@
         <h1>Basic Counter Example</h1>
         <p class="subtitle">A simple counter using HypePetiteVue</p>
 
-        <!-- Vue-powered counter -->
-        <div v-scope="{ count: 0 }">
+        <!-- Vue-powered counter with v-cloak to prevent FOUC -->
+        <div v-scope="{ count: 0 }" v-cloak>
             <div class="counter-display">{{ count }}</div>
 
             <div style="text-align: center;">
@@ -110,6 +110,7 @@
             <h3 style="margin-top: 0;">How it works:</h3>
             <ol style="margin-bottom: 0;">
                 <li>HypePetiteVue.js automatically loads Petite Vue</li>
+                <li>The <code>v-cloak</code> attribute prevents FOUC (flash of unrendered content)</li>
                 <li>The <code>v-scope</code> directive creates a reactive scope</li>
                 <li>The <code>@click</code> directive handles button clicks</li>
                 <li>The <code>{{ count }}</code> syntax displays reactive data</li>

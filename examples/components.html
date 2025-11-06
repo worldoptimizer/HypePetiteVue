@@ -189,7 +189,7 @@
         <p>A reusable counter component with customizable initial value and step size.</p>
 
         <div class="component-wrapper">
-            <div v-scope="Counter({ initial: 0, step: 1, label: 'Basic Counter' })">
+            <div v-scope="Counter({ initial: 0, step: 1, label: 'Basic Counter' })" v-cloak>
                 <strong>{{ label }}:</strong>
                 <span class="counter-display">{{ count }}</span>
                 <button @click="increment" class="btn-primary">+{{ step }}</button>
@@ -199,7 +199,7 @@
         </div>
 
         <div class="component-wrapper">
-            <div v-scope="Counter({ initial: 10, step: 5, label: 'Step Counter' })">
+            <div v-scope="Counter({ initial: 10, step: 5, label: 'Step Counter' })" v-cloak>
                 <strong>{{ label }}:</strong>
                 <span class="counter-display">{{ count }}</span>
                 <button @click="increment" class="btn-primary">+{{ step }}</button>
@@ -209,7 +209,7 @@
         </div>
 
         <div class="component-wrapper">
-            <div v-scope="Counter({ initial: 100, step: 10, label: 'Large Step Counter' })">
+            <div v-scope="Counter({ initial: 100, step: 10, label: 'Large Step Counter' })" v-cloak>
                 <strong>{{ label }}:</strong>
                 <span class="counter-display">{{ count }}</span>
                 <button @click="increment" class="btn-primary">+{{ step }}</button>
@@ -224,7 +224,7 @@
         <div v-scope="Card({
             title: 'What is HypePetiteVue?',
             content: 'HypePetiteVue is a lightweight integration layer that brings Vue.js reactive features to Tumult Hype projects. It uses Petite Vue, a 6KB distribution of Vue optimized for progressive enhancement.'
-        })">
+        })" v-cloak>
             <div class="card">
                 <div class="card-header" @click="toggle">
                     <h3 class="card-title">{{ title }}</h3>
@@ -239,7 +239,7 @@
         <div v-scope="Card({
             title: 'Why use components?',
             content: 'Components let you reuse UI patterns across your project. Define a component once and use it many times with different props. This makes your code more maintainable and easier to update.'
-        })">
+        })" v-cloak>
             <div class="card">
                 <div class="card-header" @click="toggle">
                     <h3 class="card-title">{{ title }}</h3>
@@ -255,7 +255,7 @@
             title: 'How do I create components?',
             content: 'Use HypePetiteVue.registerComponent(name, factory) to register a component. The factory function receives props and returns an object with reactive data and methods. See the source code of this page for examples!',
             expanded: false
-        })">
+        })" v-cloak>
             <div class="card">
                 <div class="card-header" @click="toggle">
                     <h3 class="card-title">{{ title }}</h3>
@@ -271,25 +271,25 @@
         <p>Interactive tags that count clicks.</p>
 
         <div style="margin: 20px 0;">
-            <div v-scope="Tag({ label: 'JavaScript' })">
+            <div v-scope="Tag({ label: 'JavaScript' })" v-cloak>
                 <span class="tag" @click="click">
                     {{ label }} <span v-if="count > 0">({{ count }})</span>
                 </span>
             </div>
 
-            <div v-scope="Tag({ label: 'Vue.js' })">
+            <div v-scope="Tag({ label: 'Vue.js' })" v-cloak>
                 <span class="tag" @click="click">
                     {{ label }} <span v-if="count > 0">({{ count }})</span>
                 </span>
             </div>
 
-            <div v-scope="Tag({ label: 'Tumult Hype' })">
+            <div v-scope="Tag({ label: 'Tumult Hype' })" v-cloak>
                 <span class="tag" @click="click">
                     {{ label }} <span v-if="count > 0">({{ count }})</span>
                 </span>
             </div>
 
-            <div v-scope="Tag({ label: 'Petite Vue' })">
+            <div v-scope="Tag({ label: 'Petite Vue' })" v-cloak>
                 <span class="tag" @click="click">
                     {{ label }} <span v-if="count > 0">({{ count }})</span>
                 </span>
