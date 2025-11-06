@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HypePetiteVue - Components Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        .card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        .card-toggle {
+            font-size: 20px;
+            user-select: none;
+        }
+        .card-content {
+            color: #666;
+            line-height: 1.6;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .counter-display {
+            display: inline-block;
+            background: #f8f9fa;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 0 10px;
+        }
+        .component-wrapper {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .tag {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #e7f3ff;
+            color: #0066cc;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 4px;
+        }
+        .simulator-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+        }
+    </style>
+    <script src="../HypeSimulator.js"></script>
+    <script src="../HypePetiteVue.js"></script>
+    <script>
+        // Register reusable components when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for HypePetiteVue to be ready
+            HypePetiteVue.ready().then(() => {
+                // Register a Counter component
+                HypePetiteVue.registerComponent('Counter', (props) => ({
+                    count: props.initial || 0,
+                    step: props.step || 1,
+                    label: props.label || 'Counter',
+
+                    increment() {
+                        this.count += this.step;
+                    },
+
+                    decrement() {
+                        this.count -= this.step;
+                    },
+
+                    reset() {
+                        this.count = props.initial || 0;
+                    }
+                }));
+
+                // Register a Card component
+                HypePetiteVue.registerComponent('Card', (props) => ({
+                    title: props.title || 'Card Title',
+                    content: props.content || 'Card content goes here.',
+                    isExpanded: props.expanded !== false,
+
+                    toggle() {
+                        this.isExpanded = !this.isExpanded;
+                    }
+                }));
+
+                // Register a Tag component
+                HypePetiteVue.registerComponent('Tag', (props) => ({
+                    label: props.label || 'Tag',
+                    count: 0,
+
+                    click() {
+                        this.count++;
+                    }
+                }));
+
+                console.log('Components registered!');
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="simulator-badge">🎭 Hype Simulator Active</div>
+    <div class="container">
+        <h1>🧩 Component Examples</h1>
+        <p class="subtitle">Reusable components with HypePetiteVue</p>
+
+        <h2>Counter Component</h2>
+        <p>A reusable counter component with customizable initial value and step size.</p>
+
+        <div class="component-wrapper">
+            <div v-scope="Counter({ initial: 0, step: 1, label: 'Basic Counter' })">
+                <strong>{{ label }}:</strong>
+                <span class="counter-display">{{ count }}</span>
+                <button @click="increment" class="btn-primary">+{{ step }}</button>
+                <button @click="decrement" class="btn-secondary">-{{ step }}</button>
+                <button @click="reset" class="btn-secondary">Reset</button>
+            </div>
+        </div>
+
+        <div class="component-wrapper">
+            <div v-scope="Counter({ initial: 10, step: 5, label: 'Step Counter' })">
+                <strong>{{ label }}:</strong>
+                <span class="counter-display">{{ count }}</span>
+                <button @click="increment" class="btn-primary">+{{ step }}</button>
+                <button @click="decrement" class="btn-secondary">-{{ step }}</button>
+                <button @click="reset" class="btn-secondary">Reset</button>
+            </div>
+        </div>
+
+        <div class="component-wrapper">
+            <div v-scope="Counter({ initial: 100, step: 10, label: 'Large Step Counter' })">
+                <strong>{{ label }}:</strong>
+                <span class="counter-display">{{ count }}</span>
+                <button @click="increment" class="btn-primary">+{{ step }}</button>
+                <button @click="decrement" class="btn-secondary">-{{ step }}</button>
+                <button @click="reset" class="btn-secondary">Reset</button>
+            </div>
+        </div>
+
+        <h2>Card Component</h2>
+        <p>Expandable card components for organizing content.</p>
+
+        <div v-scope="Card({
+            title: 'What is HypePetiteVue?',
+            content: 'HypePetiteVue is a lightweight integration layer that brings Vue.js reactive features to Tumult Hype projects. It uses Petite Vue, a 6KB distribution of Vue optimized for progressive enhancement.'
+        })">
+            <div class="card">
+                <div class="card-header" @click="toggle">
+                    <h3 class="card-title">{{ title }}</h3>
+                    <span class="card-toggle">{{ isExpanded ? '▼' : '▶' }}</span>
+                </div>
+                <div v-show="isExpanded" class="card-content">
+                    {{ content }}
+                </div>
+            </div>
+        </div>
+
+        <div v-scope="Card({
+            title: 'Why use components?',
+            content: 'Components let you reuse UI patterns across your project. Define a component once and use it many times with different props. This makes your code more maintainable and easier to update.'
+        })">
+            <div class="card">
+                <div class="card-header" @click="toggle">
+                    <h3 class="card-title">{{ title }}</h3>
+                    <span class="card-toggle">{{ isExpanded ? '▼' : '▶' }}</span>
+                </div>
+                <div v-show="isExpanded" class="card-content">
+                    {{ content }}
+                </div>
+            </div>
+        </div>
+
+        <div v-scope="Card({
+            title: 'How do I create components?',
+            content: 'Use HypePetiteVue.registerComponent(name, factory) to register a component. The factory function receives props and returns an object with reactive data and methods. See the source code of this page for examples!',
+            expanded: false
+        })">
+            <div class="card">
+                <div class="card-header" @click="toggle">
+                    <h3 class="card-title">{{ title }}</h3>
+                    <span class="card-toggle">{{ isExpanded ? '▼' : '▶' }}</span>
+                </div>
+                <div v-show="isExpanded" class="card-content">
+                    {{ content }}
+                </div>
+            </div>
+        </div>
+
+        <h2>Tag Component</h2>
+        <p>Interactive tags that count clicks.</p>
+
+        <div style="margin: 20px 0;">
+            <div v-scope="Tag({ label: 'JavaScript' })">
+                <span class="tag" @click="click">
+                    {{ label }} <span v-if="count > 0">({{ count }})</span>
+                </span>
+            </div>
+
+            <div v-scope="Tag({ label: 'Vue.js' })">
+                <span class="tag" @click="click">
+                    {{ label }} <span v-if="count > 0">({{ count }})</span>
+                </span>
+            </div>
+
+            <div v-scope="Tag({ label: 'Tumult Hype' })">
+                <span class="tag" @click="click">
+                    {{ label }} <span v-if="count > 0">({{ count }})</span>
+                </span>
+            </div>
+
+            <div v-scope="Tag({ label: 'Petite Vue' })">
+                <span class="tag" @click="click">
+                    {{ label }} <span v-if="count > 0">({{ count }})</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="background: #e7f3ff; border-left: 4px solid #007bff;">
+        <h3 style="margin-top: 0;">💡 Key Takeaways</h3>
+        <ul>
+            <li><strong>Components are reusable:</strong> Define once, use many times with different props</li>
+            <li><strong>Each instance is independent:</strong> Each component maintains its own state</li>
+            <li><strong>Props configure behavior:</strong> Pass different props to customize each instance</li>
+            <li><strong>Easy to maintain:</strong> Update component definition to update all instances</li>
+        </ul>
+    </div>
+</body>
+</html>

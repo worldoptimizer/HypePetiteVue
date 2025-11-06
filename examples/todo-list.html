@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HypePetiteVue - Todo List Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 32px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .btn-add {
+            background: #667eea;
+            color: white;
+        }
+        .btn-add:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+        .btn-add:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .todo-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .todo-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            border-left: 4px solid #667eea;
+        }
+        .todo-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .todo-item.completed {
+            opacity: 0.6;
+            border-left-color: #28a745;
+        }
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+        }
+        .todo-text {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .todo-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-complete {
+            background: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .btn-complete:hover {
+            background: #218838;
+        }
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .simulator-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+        }
+    </style>
+    <script src="../HypeSimulator.js"></script>
+    <script src="../HypePetiteVue.js"></script>
+</head>
+<body>
+    <div class="simulator-badge">🎭 Hype Simulator Active</div>
+    <div class="container">
+        <h1>📝 My Todo List</h1>
+        <p class="subtitle">Built with HypePetiteVue</p>
+
+        <div v-scope="{
+            todos: [
+                { id: 1, text: 'Learn HypePetiteVue', completed: false },
+                { id: 2, text: 'Build something awesome', completed: false }
+            ],
+            newTodo: '',
+            nextId: 3,
+
+            addTodo() {
+                if (this.newTodo.trim()) {
+                    this.todos.push({
+                        id: this.nextId++,
+                        text: this.newTodo.trim(),
+                        completed: false
+                    });
+                    this.newTodo = '';
+                }
+            },
+
+            toggleComplete(todo) {
+                todo.completed = !todo.completed;
+            },
+
+            deleteTodo(id) {
+                const index = this.todos.findIndex(t => t.id === id);
+                if (index !== -1) {
+                    this.todos.splice(index, 1);
+                }
+            },
+
+            get activeTodos() {
+                return this.todos.filter(t => !t.completed).length;
+            },
+
+            get completedTodos() {
+                return this.todos.filter(t => t.completed).length;
+            }
+        }">
+            <div class="input-group">
+                <input
+                    type="text"
+                    v-model="newTodo"
+                    @keyup.enter="addTodo"
+                    placeholder="What needs to be done?"
+                />
+                <button @click="addTodo" class="btn-add" :disabled="!newTodo.trim()">
+                    Add
+                </button>
+            </div>
+
+            <div v-if="todos.length === 0" class="empty-state">
+                <div class="empty-state-icon">🎉</div>
+                <p>No todos yet! Add one above to get started.</p>
+            </div>
+
+            <ul v-else class="todo-list">
+                <li v-for="todo in todos" :key="todo.id"
+                    class="todo-item"
+                    :class="{ completed: todo.completed }">
+                    <span class="todo-text">{{ todo.text }}</span>
+                    <div class="todo-actions">
+                        <button @click="toggleComplete(todo)" class="btn-complete">
+                            {{ todo.completed ? '↩️' : '✓' }}
+                        </button>
+                        <button @click="deleteTodo(todo.id)" class="btn-delete">
+                            ✕
+                        </button>
+                    </div>
+                </li>
+            </ul>
+
+            <div v-if="todos.length > 0" class="stats">
+                <strong>Stats:</strong>
+                {{ activeTodos }} active,
+                {{ completedTodos }} completed,
+                {{ todos.length }} total
+            </div>
+        </div>
+    </div>
+</body>
+</html>
