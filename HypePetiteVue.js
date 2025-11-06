@@ -17,13 +17,14 @@
     /**
      * Inject CSS to hide unrendered Petite Vue content
      * Prevents FOUC (Flash of Unstyled Content) before Petite Vue mounts
+     * Only hides elements with explicit v-cloak attribute to avoid breaking Hype IDE
      */
     function injectCloakStyles() {
         if (!document.getElementById('hype-petite-vue-cloak-styles')) {
             const style = document.createElement('style');
             style.id = 'hype-petite-vue-cloak-styles';
             style.textContent = `
-                [v-cloak], [v-scope]:not([data-v-mounted]) {
+                [v-cloak] {
                     display: none !important;
                 }
             `;
@@ -47,6 +48,7 @@
             _petiteVueLoaded: false,
             _loadingPromise: null,
             _globalAppMounted: false,
+            _shouldMountWhenReady: false,
 
             /**
              * Initialize HypePetiteVue for a Hype document
@@ -59,10 +61,15 @@
                 const docId = hypeDocument.documentId();
 
                 return this.loadPetiteVue().then(() => {
-                    // Don't mount immediately - wait for HypeScenePrepareForDisplay
-                    // This prevents FOUC by mounting before the scene is visible
                     console.log('[HypePetiteVue] Initialized for document:', docId);
-                    console.log('[HypePetiteVue] Waiting for HypeScenePrepareForDisplay to mount');
+
+                    // If HypeScenePrepareForDisplay already fired and set the flag, mount now
+                    if (this._shouldMountWhenReady && !this._globalAppMounted) {
+                        console.log('[HypePetiteVue] Mounting after load (HypeScenePrepareForDisplay already fired)');
+                        // Small delay to allow other HypeDocumentLoad callbacks to register stores/components
+                        setTimeout(() => this._autoMount(), 10);
+                    }
+
                     return this;
                 });
             },
@@ -331,10 +338,17 @@
     window.HYPE_eventListeners.push({
         type: "HypeScenePrepareForDisplay",
         callback: function(hypeDocument, element, event) {
-            // Mount Petite Vue before scene is displayed to prevent FOUC
+            console.log('[HypePetiteVue] HypeScenePrepareForDisplay - fired, _petiteVueLoaded:', HypePetiteVue._petiteVueLoaded);
+
+            // Set flag to mount when ready
+            HypePetiteVue._shouldMountWhenReady = true;
+
+            // If Petite Vue is already loaded, mount immediately
             if (HypePetiteVue._petiteVueLoaded && !HypePetiteVue._globalAppMounted) {
-                console.log('[HypePetiteVue] HypeScenePrepareForDisplay - mounting before scene display');
+                console.log('[HypePetiteVue] HypeScenePrepareForDisplay - mounting immediately (Petite Vue already loaded)');
                 HypePetiteVue._autoMount();
+            } else if (!HypePetiteVue._petiteVueLoaded) {
+                console.log('[HypePetiteVue] HypeScenePrepareForDisplay - Petite Vue not loaded yet, will mount when ready');
             }
         }
     });
