@@ -1,5 +1,5 @@
 /*!
- * HypePetiteVue v1.0.2
+ * HypePetiteVue v1.0.3
  * Copyright (c) 2025
  * MIT License
  *
@@ -42,7 +42,7 @@
      */
     if (!window.HypePetiteVue) {
         window.HypePetiteVue = {
-            version: '1.0.2',
+            version: '1.0.3',
             _petiteVueLoaded: false,
             _loadingPromise: null,
             _pendingMounts: new Map(), // Track scenes waiting to mount
@@ -115,9 +115,6 @@
                     script.onload = () => {
                         this._petiteVueLoaded = true;
                         console.log('[HypePetiteVue] Petite Vue loaded successfully from CDN');
-
-                        // Process any pending mounts
-                        this._processPendingMounts();
                         resolve();
                     };
                     script.onerror = () => {
@@ -130,15 +127,17 @@
             },
 
             /**
-             * Process pending mounts that were queued before Petite Vue loaded
+             * Process pending mount for a specific document after its app is created
              * @private
+             * @param {Object} hypeDocument - The Hype document object
              */
-            _processPendingMounts: function() {
-                console.log('[HypePetiteVue] Processing pending mounts:', this._pendingMounts.size);
-                this._pendingMounts.forEach((data, hypeDocument) => {
-                    this._mountApp(hypeDocument, data.element);
-                });
-                this._pendingMounts.clear();
+            _processPendingMount: function(hypeDocument) {
+                const pendingMount = this._pendingMounts.get(hypeDocument);
+                if (pendingMount) {
+                    console.log('[HypePetiteVue] Processing pending mount for document:', hypeDocument.documentId());
+                    this._mountApp(hypeDocument, pendingMount.element);
+                    this._pendingMounts.delete(hypeDocument);
+                }
             },
 
             /**
@@ -185,6 +184,10 @@
                     // The app is passed the hypeDocument as its scope
                     hypeDocument.$app = window.PetiteVue.createApp(hypeDocument);
                     console.log('[HypePetiteVue] App created for document:', hypeDocument.documentId());
+
+                    // Process any pending mount for this document
+                    // This handles the case where HypeScenePrepareForDisplay fired before the app was created
+                    this._processPendingMount(hypeDocument);
                 });
             },
 

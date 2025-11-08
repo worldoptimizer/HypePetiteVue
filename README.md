@@ -62,189 +62,7 @@ Add to your Hype document's Head HTML:
 
 ### Global Object: `HypePetiteVue`
 
-All functionality is available through the global `HypePetiteVue` object.
-
-#### `init(hypeDocument, element, event)`
-
-Initialize HypePetiteVue for a Hype document. Usually called automatically.
-
-```javascript
-function onDocumentLoad(hypeDocument, element, event) {
-    HypePetiteVue.init(hypeDocument, element, event);
-}
-```
-
-**Parameters:**
-- `hypeDocument` - The Hype document object
-- `element` - The HTML element
-- `event` - The event object
-
-**Returns:** Promise that resolves when initialized
-
----
-
-#### `loadPetiteVue(customUrl)`
-
-Load the Petite Vue library. Called automatically by other methods.
-
-```javascript
-HypePetiteVue.loadPetiteVue()
-    .then(() => console.log('Ready!'));
-```
-
-**Parameters:**
-- `customUrl` (optional) - Custom CDN URL for Petite Vue
-
-**Returns:** Promise that resolves when library is loaded
-
----
-
-#### `createApp(config, mountElement)`
-
-Create a Petite Vue app with the given configuration.
-
-```javascript
-HypePetiteVue.createApp({
-    count: 0,
-    increment() {
-        this.count++;
-    }
-}).then(app => {
-    console.log('App created!');
-});
-```
-
-**Parameters:**
-- `config` - Configuration object with reactive data and methods
-- `mountElement` (optional) - Specific element to mount on
-
-**Returns:** Promise that resolves with the created app
-
----
-
-#### `createStore(name, state)`
-
-Create a reactive store for global state management.
-
-```javascript
-HypePetiteVue.createStore('app', {
-    user: null,
-    isLoggedIn: false,
-    login(username) {
-        this.user = username;
-        this.isLoggedIn = true;
-    }
-}).then(store => {
-    // Store is now available globally
-    console.log('Store created:', store);
-});
-```
-
-**Parameters:**
-- `name` - Store identifier
-- `state` - Initial state object
-
-**Returns:** Promise that resolves with the reactive store
-
-**Usage in templates:**
-```html
-<div v-scope>
-    <p v-if="$store.app.isLoggedIn">Welcome, {{ $store.app.user }}!</p>
-</div>
-```
-
----
-
-#### `registerComponent(name, component)`
-
-Register a component for reuse across your Hype document.
-
-```javascript
-HypePetiteVue.registerComponent('Counter', (props) => {
-    return {
-        count: props.initialCount || 0,
-        increment() {
-            this.count++;
-        },
-        decrement() {
-            this.count--;
-        }
-    };
-});
-```
-
-**Parameters:**
-- `name` - Component identifier
-- `component` - Component factory function
-
-**Usage in templates:**
-```html
-<div v-scope="Counter({ initialCount: 10 })">
-    <button @click="decrement">-</button>
-    <span>{{ count }}</span>
-    <button @click="increment">+</button>
-</div>
-```
-
----
-
-#### `mountOnElement(hypeDocument, elementId, scope)`
-
-Mount a Petite Vue app on a specific Hype element.
-
-```javascript
-function setupVue(hypeDocument, element, event) {
-    HypePetiteVue.mountOnElement(hypeDocument, 'myElement', {
-        message: 'Hello from Hype!',
-        update() {
-            this.message = 'Updated!';
-        }
-    });
-}
-```
-
-**Parameters:**
-- `hypeDocument` - The Hype document object
-- `elementId` - Hype element ID
-- `scope` - Scope data for the element
-
-**Returns:** Promise that resolves when mounted
-
----
-
-#### `createHypeStore(hypeDocument, state)`
-
-Create a reactive store with built-in Hype API integration.
-
-```javascript
-function onSceneLoad(hypeDocument, element, event) {
-    HypePetiteVue.createHypeStore(hypeDocument, {
-        currentScene: 'intro',
-        goToScene(sceneName) {
-            this.$hype.showScene(sceneName);
-            this.currentScene = sceneName;
-        },
-        playAnimation() {
-            this.$hype.startTimeline('Main Timeline');
-        }
-    }).then(store => {
-        // Store includes $hype utilities
-        console.log('Hype store ready!');
-    });
-}
-```
-
-**Available `$hype` utilities:**
-- `$hype.document` - The hypeDocument object
-- `$hype.showScene(sceneName, transition, duration)` - Navigate to a scene
-- `$hype.startTimeline(timelineName)` - Start a timeline
-- `$hype.pauseTimeline(timelineName)` - Pause a timeline
-- `$hype.continueTimeline(timelineName)` - Continue a paused timeline
-- `$hype.goToTime(timeInSeconds, timelineName)` - Jump to a specific time
-- `$hype.getElementById(elementId)` - Get a Hype element
-- `$hype.setElementProperty(element, property, value, duration, timing)` - Animate element properties
-
----
+HypePetiteVue works automatically - just add it to your Head HTML and start using Vue directives. For advanced use cases, the following methods are available:
 
 #### `ready()`
 
@@ -252,8 +70,7 @@ Wait for Petite Vue to be fully loaded and ready.
 
 ```javascript
 HypePetiteVue.ready().then(() => {
-    // Petite Vue is ready
-    console.log('Ready to use Petite Vue!');
+    console.log('Petite Vue is ready!');
 });
 ```
 
@@ -263,7 +80,7 @@ HypePetiteVue.ready().then(() => {
 
 #### `getPetiteVue()`
 
-Get direct access to the Petite Vue global object.
+Get direct access to the Petite Vue global object for advanced use cases.
 
 ```javascript
 const PetiteVue = HypePetiteVue.getPetiteVue();
@@ -271,6 +88,57 @@ const PetiteVue = HypePetiteVue.getPetiteVue();
 ```
 
 **Returns:** PetiteVue global object
+
+---
+
+#### `loadPetiteVue(customUrl)`
+
+Load a specific version or custom build of Petite Vue.
+
+```javascript
+HypePetiteVue.loadPetiteVue('https://unpkg.com/petite-vue@0.3.0/dist/petite-vue.iife.js')
+    .then(() => console.log('Custom version loaded!'));
+```
+
+**Parameters:**
+- `customUrl` (optional) - Custom CDN URL for Petite Vue
+
+**Returns:** Promise that resolves when library is loaded
+
+**Note:** Usually not needed - HypePetiteVue loads Petite Vue automatically. Use this only if you need a specific version.
+
+---
+
+### Working with hypeDocument
+
+The simplest way to share state and functions with your Vue templates is to add them directly to the `hypeDocument` object in your HypeDocumentLoad function:
+
+```javascript
+function HypeDocumentLoad(hypeDocument, element, event) {
+    // Add reactive data
+    hypeDocument.count = 0;
+    hypeDocument.user = { name: '', email: '' };
+
+    // Add methods
+    hypeDocument.increment = function() {
+        this.count++;
+    };
+
+    hypeDocument.goToNextScene = function() {
+        hypeDocument.showSceneNamed('Next Scene');
+    };
+}
+```
+
+Then use them in your HTML:
+
+```html
+<div v-scope>
+    <h1>Count: {{ count }}</h1>
+    <button @click="increment">Increment</button>
+    <button @click="goToNextScene">Next Scene</button>
+</div>
+```
 
 ---
 
@@ -452,53 +320,50 @@ Add to Inner HTML of a Hype element:
 </div>
 ```
 
-### Example 4: Interactive Scene Navigation with Hype Store
+### Example 4: Interactive Scene Navigation
 
-Add this JavaScript function to run on Scene Load:
+Add this JavaScript function to run on Document Load:
 
 ```javascript
-function setupSceneNav(hypeDocument, element, event) {
-    HypePetiteVue.createHypeStore(hypeDocument, {
-        scenes: ['Scene 1', 'Scene 2', 'Scene 3'],
-        currentScene: hypeDocument.currentSceneName(),
-        navigateTo(sceneName) {
-            this.$hype.showScene(sceneName, hypeDocument.kSceneTransitionCrossfade, 0.5);
-            this.currentScene = sceneName;
-        }
-    }).then(store => {
-        // Mount on a specific element
-        const navElement = hypeDocument.getElementById('sceneNav');
-        if (navElement) {
-            navElement.innerHTML = `
-                <div v-scope style="padding: 10px;">
-                    <h3>Navigate Scenes</h3>
-                    <button v-for="scene in $store.currentScene ? [] : scenes"
-                            @click="$store.navigateTo(scene)"
-                            style="padding: 8px 15px; margin: 5px;">
-                        {{ scene }}
-                    </button>
-                    <p>Current: {{ $store.currentScene }}</p>
-                </div>
-            `;
-        }
-    });
+function HypeDocumentLoad(hypeDocument, element, event) {
+    // Add scene navigation state to hypeDocument
+    hypeDocument.scenes = ['Scene 1', 'Scene 2', 'Scene 3'];
+    hypeDocument.currentScene = hypeDocument.currentSceneName();
+
+    hypeDocument.navigateTo = function(sceneName) {
+        hypeDocument.showSceneNamed(sceneName, hypeDocument.kSceneTransitionCrossfade, 0.5);
+        this.currentScene = sceneName;
+    };
 }
+```
+
+HTML in a Hype element:
+
+```html
+<div v-scope style="padding: 10px;">
+    <h3>Navigate Scenes</h3>
+    <button v-for="scene in scenes"
+            @click="navigateTo(scene)"
+            style="padding: 8px 15px; margin: 5px;">
+        {{ scene }}
+    </button>
+    <p>Current: {{ currentScene }}</p>
+</div>
 ```
 
 ### Example 5: Animated Counter with Hype Timeline
 
 ```javascript
-function setupAnimatedCounter(hypeDocument, element, event) {
-    HypePetiteVue.createHypeStore(hypeDocument, {
-        count: 0,
-        isAnimating: false,
-        incrementWithAnimation() {
-            this.count++;
-            this.isAnimating = true;
-            this.$hype.startTimeline('CounterPulse');
-            setTimeout(() => { this.isAnimating = false; }, 500);
-        }
-    });
+function HypeDocumentLoad(hypeDocument, element, event) {
+    hypeDocument.count = 0;
+    hypeDocument.isAnimating = false;
+
+    hypeDocument.incrementWithAnimation = function() {
+        this.count++;
+        this.isAnimating = true;
+        hypeDocument.startTimelineNamed('CounterPulse');
+        setTimeout(() => { this.isAnimating = false; }, 500);
+    };
 }
 ```
 
@@ -506,53 +371,56 @@ HTML in a Hype element:
 
 ```html
 <div v-scope style="text-align: center;">
-    <h1>{{ $store.count }}</h1>
-    <button @click="$store.incrementWithAnimation()"
-            :disabled="$store.isAnimating"
+    <h1>{{ count }}</h1>
+    <button @click="incrementWithAnimation()"
+            :disabled="isAnimating"
             style="padding: 15px 30px; font-size: 18px;">
-        <span v-if="!$store.isAnimating">Click Me!</span>
+        <span v-if="!isAnimating">Click Me!</span>
         <span v-else>Animating...</span>
     </button>
 </div>
 ```
 
-### Example 6: Global Component Registration
+### Example 6: Reusable Component Pattern
 
-Add this to a function that runs on Document Load:
+You can create component factory functions directly in your HypeDocumentLoad:
 
 ```javascript
-function registerComponents(hypeDocument, element, event) {
-    // Register a reusable Button component
-    HypePetiteVue.registerComponent('HypeButton', (props) => ({
-        label: props.label || 'Click',
-        count: 0,
-        handleClick() {
-            this.count++;
-            if (props.onClick) {
-                props.onClick(this.count);
+function HypeDocumentLoad(hypeDocument, element, event) {
+    // Create a Counter component factory
+    hypeDocument.Counter = function(props) {
+        return {
+            count: props.initialCount || 0,
+            increment() {
+                this.count++;
+            },
+            decrement() {
+                this.count--;
             }
-        }
-    }));
+        };
+    };
 
-    // Register a Card component
-    HypePetiteVue.registerComponent('Card', (props) => ({
-        title: props.title || 'Card Title',
-        content: props.content || 'Card content',
-        isExpanded: false,
-        toggle() {
-            this.isExpanded = !this.isExpanded;
-        }
-    }));
+    // Create a Card component factory
+    hypeDocument.Card = function(props) {
+        return {
+            title: props.title || 'Card Title',
+            content: props.content || 'Card content',
+            isExpanded: false,
+            toggle() {
+                this.isExpanded = !this.isExpanded;
+            }
+        };
+    };
 }
 ```
 
 Use in HTML:
 
 ```html
-<div v-scope="HypeButton({ label: 'Custom Button' })" style="padding: 10px;">
-    <button @click="handleClick" style="padding: 10px 20px;">
-        {{ label }} ({{ count }})
-    </button>
+<div v-scope="Counter({ initialCount: 10 })" style="padding: 10px;">
+    <button @click="decrement">-</button>
+    <span>{{ count }}</span>
+    <button @click="increment">+</button>
 </div>
 
 <div v-scope="Card({ title: 'Welcome', content: 'This is a reusable card component!' })" style="padding: 15px; margin: 10px; border: 1px solid #ddd; border-radius: 8px;">
@@ -567,43 +435,49 @@ Use in HTML:
 
 ### 1. Initialize on Document Load
 
-Set up stores and components when your Hype document loads:
+Set up your reactive state and methods when your Hype document loads:
 
 ```javascript
-function onDocumentLoad(hypeDocument, element, event) {
-    // Create global stores
-    HypePetiteVue.createStore('app', { /* state */ });
+function HypeDocumentLoad(hypeDocument, element, event) {
+    // Add reactive state
+    hypeDocument.count = 0;
+    hypeDocument.user = { name: '', email: '' };
 
-    // Register components
-    HypePetiteVue.registerComponent('MyComponent', /* factory */);
+    // Add methods
+    hypeDocument.increment = function() {
+        this.count++;
+    };
+
+    // Create component factories
+    hypeDocument.Modal = function(props) { /* ... */ };
 }
 ```
 
-### 2. Use Hype Stores for Timeline Integration
+### 2. Use hypeDocument for Timeline Integration
 
-When you need Vue state to control Hype animations:
+When you need Vue state to control Hype animations, add methods to hypeDocument:
 
 ```javascript
-HypePetiteVue.createHypeStore(hypeDocument, {
-    playIntro() {
-        this.$hype.startTimeline('Intro');
-    }
-});
+function HypeDocumentLoad(hypeDocument, element, event) {
+    hypeDocument.playIntro = function() {
+        hypeDocument.startTimelineNamed('Intro');
+    };
+}
 ```
 
 ### 3. Clean Separation of Concerns
 
 - Use Hype for animations and layout
 - Use Vue for interactivity and state management
-- Use stores to bridge between them
+- Use hypeDocument properties to bridge between them
 
 ### 4. Leverage Component Reusability
 
-Register components for UI patterns you use frequently:
+Create component factory functions on hypeDocument for UI patterns you use frequently:
 
 ```javascript
-HypePetiteVue.registerComponent('Modal', modalFactory);
-HypePetiteVue.registerComponent('Tooltip', tooltipFactory);
+hypeDocument.Modal = function(props) { /* ... */ };
+hypeDocument.Tooltip = function(props) { /* ... */ };
 ```
 
 ### 5. Keep Scope Small
@@ -685,19 +559,26 @@ hypeDocument.persistentCount = 0;
 </div>
 ```
 
-**✅ Also correct - Using a Hype Store:**
+**✅ Also correct - Using a component factory:**
 ```javascript
 // In HypeDocumentLoad
-HypePetiteVue.createHypeStore(hypeDocument, {
-    count: 0
-});
+hypeDocument.Counter = function() {
+    return {
+        count: 0,
+        increment() {
+            this.count++;
+        }
+    };
+};
 ```
 
 ```html
-<div v-scope>
-    <button @click="$store.count++">{{ $store.count }}</button>
+<div v-scope="Counter()">
+    <button @click="increment">{{ count }}</button>
 </div>
 ```
+
+**Note:** Component scope state is reset when you revisit a scene. Only `hypeDocument` properties persist.
 
 ### Working with Symbols
 
@@ -809,31 +690,39 @@ HypePetiteVue.ready().then(() => {
 
 **Solution:** Make sure HypePetiteVue.js is loaded in the Head HTML and the element contains valid Vue template syntax.
 
-### Store Not Found
+### State Not Persisting Across Scenes
 
-**Problem:** `$store.myStore` is undefined.
+**Problem:** My data resets when I switch scenes.
 
-**Solution:** Create the store before mounting:
+**Solution:** Add state to `hypeDocument`, not to local `v-scope`:
 
 ```javascript
-// In Document Load function
-HypePetiteVue.createStore('myStore', { /* state */ });
+// In HypeDocumentLoad
+hypeDocument.myData = { count: 0 };
 ```
 
 ### Timeline Not Triggering
 
-**Problem:** Calling `$hype.startTimeline()` from a store doesn't work.
+**Problem:** Calling Hype timelines from Vue doesn't work.
 
-**Solution:** Use `createHypeStore()` instead of `createStore()` to get access to `$hype` utilities.
+**Solution:** Add methods to `hypeDocument` and call Hype APIs directly:
+
+```javascript
+hypeDocument.playAnimation = function() {
+    hypeDocument.startTimelineNamed('Main Timeline');
+};
+```
 
 ### Elements Not Updating
 
 **Problem:** Hype elements don't update when Vue state changes.
 
-**Solution:** Vue manages its own DOM. To update Hype elements from Vue, use:
+**Solution:** Vue manages its own DOM. To update Hype elements from Vue, use the Hype API directly:
 
 ```javascript
-this.$hype.setElementProperty(element, 'opacity', 0.5, 1, 'easeinout');
+// In your Vue method
+const element = hypeDocument.getElementById('myElement');
+hypeDocument.setElementProperty(element, 'opacity', 0.5, 1, 'easeinout');
 ```
 
 ---
@@ -850,6 +739,12 @@ Petite Vue supports all modern browsers. IE11 is not supported.
 ---
 
 ## Version History
+
+### v1.0.3 (2025)
+- Fix race condition where scene mount attempts before app initialization completes
+- Process pending mounts per-document after app creation instead of globally
+- Update README to reflect simplified API (removed deprecated methods)
+- All examples now use `hypeDocument` properties instead of removed store/component APIs
 
 ### v1.0.2 (2025)
 - Auto-detect pre-loaded Petite Vue (no duplicate loading if user includes script)
