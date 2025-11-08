@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HypePetiteVue - Basic Counter Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .counter-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .info-box {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .simulator-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+        }
+    </style>
+    <!-- Load Hype Simulator first to create mock Hype environment -->
+    <script src="../HypeSimulator.js"></script>
+    <!-- Load HypePetiteVue which will auto-load Petite Vue -->
+    <script src="../HypePetiteVue.js"></script>
+</head>
+<body>
+    <div class="simulator-badge">🎭 Hype Simulator Active</div>
+    <div class="container">
+        <h1>Basic Counter Example</h1>
+        <p class="subtitle">A simple counter using HypePetiteVue</p>
+
+        <!-- Vue-powered counter with v-cloak to prevent FOUC -->
+        <div v-scope="{ count: 0 }" v-cloak>
+            <div class="counter-display">{{ count }}</div>
+
+            <div style="text-align: center;">
+                <button @click="count++" class="btn-primary">Increment (+1)</button>
+                <button @click="count--" class="btn-secondary">Decrement (-1)</button>
+                <button @click="count = 0" class="btn-secondary">Reset</button>
+            </div>
+
+            <div class="info-box">
+                <strong>Status:</strong>
+                <span v-if="count === 0">Counter is at zero</span>
+                <span v-else-if="count > 0">Counter is positive: {{ count }}</span>
+                <span v-else>Counter is negative: {{ count }}</span>
+            </div>
+        </div>
+
+        <div class="info-box" style="margin-top: 30px; background: #f8f9fa; border-left-color: #6c757d;">
+            <h3 style="margin-top: 0;">How it works:</h3>
+            <ol style="margin-bottom: 0;">
+                <li>HypePetiteVue.js automatically loads Petite Vue</li>
+                <li>The <code>v-cloak</code> attribute prevents FOUC (flash of unrendered content)</li>
+                <li>The <code>v-scope</code> directive creates a reactive scope</li>
+                <li>The <code>@click</code> directive handles button clicks</li>
+                <li>The <code>{{ count }}</code> syntax displays reactive data</li>
+                <li>The <code>v-if</code>/<code>v-else-if</code>/<code>v-else</code> directives handle conditional rendering</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
