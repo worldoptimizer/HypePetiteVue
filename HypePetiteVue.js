@@ -1,5 +1,5 @@
 /*!
- * HypePetiteVue v1.0.1
+ * HypePetiteVue v1.0.2
  * Copyright (c) 2025
  * MIT License
  *
@@ -25,6 +25,9 @@
                 [v-cloak] {
                     display: none !important;
                 }
+                .hype-petite-vue-loading {
+                    visibility: hidden !important;
+                }
             `;
             document.head.appendChild(style);
         }
@@ -39,10 +42,53 @@
      */
     if (!window.HypePetiteVue) {
         window.HypePetiteVue = {
-            version: '1.0.1',
+            version: '1.0.2',
             _petiteVueLoaded: false,
             _loadingPromise: null,
             _pendingMounts: new Map(), // Track scenes waiting to mount
+            _documentContainers: new Map(), // Track document containers for FOUC prevention
+
+            /**
+             * Check if Petite Vue is already loaded in the page
+             * @private
+             * @returns {boolean} True if Petite Vue is already available
+             */
+            _checkExistingPetiteVue: function() {
+                if (typeof window.PetiteVue !== 'undefined' && !this._petiteVueLoaded) {
+                    console.log('[HypePetiteVue] Petite Vue already loaded, using existing instance');
+                    this._petiteVueLoaded = true;
+                    return true;
+                }
+                return false;
+            },
+
+            /**
+             * Hide Hype document container during loading to prevent FOUC
+             * @private
+             * @param {string} documentId - The Hype document ID
+             * @param {HTMLElement} container - The document container element
+             */
+            _hideDocumentContainer: function(documentId, container) {
+                if (!this._petiteVueLoaded && container && !container.classList.contains('hype-petite-vue-loading')) {
+                    console.log('[HypePetiteVue] Hiding document container to prevent FOUC:', documentId);
+                    container.classList.add('hype-petite-vue-loading');
+                    this._documentContainers.set(documentId, container);
+                }
+            },
+
+            /**
+             * Show Hype document container after mounting completes
+             * @private
+             * @param {string} documentId - The Hype document ID
+             */
+            _showDocumentContainer: function(documentId) {
+                const container = this._documentContainers.get(documentId);
+                if (container) {
+                    console.log('[HypePetiteVue] Showing document container:', documentId);
+                    container.classList.remove('hype-petite-vue-loading');
+                    this._documentContainers.delete(documentId);
+                }
+            },
 
             /**
              * Load Petite Vue library dynamically
@@ -50,6 +96,11 @@
              * @returns {Promise} Promise that resolves when library is loaded
              */
             loadPetiteVue: function(customUrl) {
+                // Check if already loaded (either by us or by user)
+                if (this._checkExistingPetiteVue()) {
+                    return Promise.resolve();
+                }
+
                 if (this._petiteVueLoaded) {
                     return Promise.resolve();
                 }
@@ -63,14 +114,14 @@
                     script.src = customUrl || PETITE_VUE_CDN;
                     script.onload = () => {
                         this._petiteVueLoaded = true;
-                        console.log('[HypePetiteVue] Petite Vue loaded successfully');
+                        console.log('[HypePetiteVue] Petite Vue loaded successfully from CDN');
 
                         // Process any pending mounts
                         this._processPendingMounts();
                         resolve();
                     };
                     script.onerror = () => {
-                        reject(new Error('Failed to load Petite Vue'));
+                        reject(new Error('Failed to load Petite Vue from CDN'));
                     };
                     document.head.appendChild(script);
                 });
@@ -84,8 +135,8 @@
              */
             _processPendingMounts: function() {
                 console.log('[HypePetiteVue] Processing pending mounts:', this._pendingMounts.size);
-                this._pendingMounts.forEach((element, hypeDocument) => {
-                    this._mountApp(hypeDocument, element);
+                this._pendingMounts.forEach((data, hypeDocument) => {
+                    this._mountApp(hypeDocument, data.element);
                 });
                 this._pendingMounts.clear();
             },
@@ -102,20 +153,32 @@
 
                 console.log('[HypePetiteVue] Mounting app on scene container');
                 hypeDocument.$app.mount(element);
+
+                // Show the document container now that mounting is complete
+                this._showDocumentContainer(hypeDocument.documentId());
             },
 
             /**
              * Initialize Petite Vue app for a Hype document
              * Called once per document in HypeDocumentLoad
              * @param {Object} hypeDocument - The Hype document object
+             * @param {HTMLElement} element - The document container element
              * @returns {Promise} Promise that resolves when initialized
              */
-            initDocument: function(hypeDocument) {
+            initDocument: function(hypeDocument, element) {
+                // Check for existing Petite Vue before attempting to load
+                this._checkExistingPetiteVue();
+
+                // Hide document container if we need to load Petite Vue
+                if (!this._petiteVueLoaded && element) {
+                    this._hideDocumentContainer(hypeDocument.documentId(), element);
+                }
+
                 return this.loadPetiteVue().then(() => {
                     // Call user's custom HypeDocumentLoad if it exists
                     if (typeof hypeDocument.functions !== 'undefined' &&
                         typeof hypeDocument.functions().HypeDocumentLoad === 'function') {
-                        hypeDocument.functions().HypeDocumentLoad(hypeDocument, null, null);
+                        hypeDocument.functions().HypeDocumentLoad(hypeDocument, element, null);
                     }
 
                     // Create the app once per document
@@ -134,7 +197,7 @@
                 if (!this._petiteVueLoaded) {
                     // Queue this mount for when Petite Vue loads
                     console.log('[HypePetiteVue] Petite Vue not loaded yet, queuing mount');
-                    this._pendingMounts.set(hypeDocument, element);
+                    this._pendingMounts.set(hypeDocument, { element: element });
                     return;
                 }
 
@@ -190,7 +253,7 @@
         type: "HypeDocumentLoad",
         callback: function(hypeDocument, element, event) {
             if (window.HypePetiteVueAutoInit !== false) {
-                HypePetiteVue.initDocument(hypeDocument);
+                HypePetiteVue.initDocument(hypeDocument, element);
             }
         }
     });

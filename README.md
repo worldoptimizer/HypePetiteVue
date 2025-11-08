@@ -729,6 +729,37 @@ Then in your symbol's innerHTML:
 
 ## Advanced Usage
 
+### Using Your Own Petite Vue Script
+
+If you prefer to load Petite Vue yourself (e.g., for a specific version or from your own CDN), HypePetiteVue will automatically detect it and skip loading:
+
+```html
+<!-- Add to Head HTML BEFORE HypePetiteVue.js -->
+<script src="https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.iife.js"></script>
+<script src="HypePetiteVue.js"></script>
+```
+
+HypePetiteVue checks for `window.PetiteVue` and uses it if available. This means:
+- No duplicate loading
+- You control the version
+- Faster initialization (no async load needed)
+
+### FOUC Prevention
+
+HypePetiteVue automatically prevents Flash of Unstyled Content (FOUC) when loading Petite Vue asynchronously:
+
+**What happens:**
+1. When `HypeDocumentLoad` fires, if Petite Vue isn't loaded yet, the Hype document container is hidden with `visibility: hidden`
+2. The document remains hidden while Petite Vue loads from CDN
+3. Once Petite Vue mounts on the first scene, the container becomes visible
+
+**Benefits:**
+- Uses `visibility: hidden` (not `display: none`) to avoid layout shifts
+- Only hides if loading is needed (skipped if Petite Vue is already loaded)
+- Per-document hiding (won't affect other Hype documents on the page)
+
+**Note:** If you load Petite Vue yourself in the Head HTML, FOUC prevention is skipped entirely since there's no async loading delay.
+
 ### Custom Petite Vue Version
 
 Load a specific version or custom build:
@@ -819,6 +850,18 @@ Petite Vue supports all modern browsers. IE11 is not supported.
 ---
 
 ## Version History
+
+### v1.0.2 (2025)
+- Auto-detect pre-loaded Petite Vue (no duplicate loading if user includes script)
+- FOUC prevention: hide Hype document during async Petite Vue loading
+- Uses `visibility: hidden` to avoid layout shifts
+- Better console logging to distinguish CDN vs. pre-loaded Petite Vue
+
+### v1.0.1 (2025)
+- Fix scene persistence by implementing proper mount/unmount pattern
+- Align with Hype's innerHTML restoration behavior
+- Clone and replace element after unmount for clean scene revisits
+- Simplified API focused on mount/unmount lifecycle
 
 ### v1.0.0 (2025)
 - Complete rewrite with improved integration
