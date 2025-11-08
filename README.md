@@ -109,23 +109,32 @@ HypePetiteVue.loadPetiteVue('https://unpkg.com/petite-vue@0.3.0/dist/petite-vue.
 
 ---
 
-### Working with hypeDocument
+### Working with customData
 
-The simplest way to share state and functions with your Vue templates is to add them directly to the `hypeDocument` object in your HypeDocumentLoad function:
+HypePetiteVue uses **`hypeDocument.customData`** as the Vue scope. This is Hype's standard property for user data and is safe for Petite Vue's reactivity system.
+
+Add your Vue data and component factories to `customData` in your HypeDocumentLoad function:
 
 ```javascript
 function HypeDocumentLoad(hypeDocument, element, event) {
-    // Add reactive data
-    hypeDocument.count = 0;
-    hypeDocument.user = { name: '', email: '' };
+    // Initialize customData if not already present
+    hypeDocument.customData = hypeDocument.customData || {};
 
-    // Add methods
-    hypeDocument.increment = function() {
-        this.count++;
+    // Add reactive data
+    hypeDocument.customData.count = 0;
+    hypeDocument.customData.scenes = ['Scene 1', 'Scene 2', 'Scene 3'];
+
+    // Add component factories (can access hypeDocument via closure)
+    hypeDocument.customData.Counter = function(props) {
+        return {
+            count: props.initialCount || 0,
+            increment() { this.count++; },
+            decrement() { this.count--; }
+        };
     };
 
-    hypeDocument.goToNextScene = function() {
-        hypeDocument.showSceneNamed('Next Scene');
+    hypeDocument.customData.navigateTo = function(sceneName) {
+        hypeDocument.showSceneNamed(sceneName);
     };
 }
 ```
@@ -133,10 +142,18 @@ function HypeDocumentLoad(hypeDocument, element, event) {
 Then use them in your HTML:
 
 ```html
+<!-- Access customData properties directly -->
 <div v-scope>
     <h1>Count: {{ count }}</h1>
-    <button @click="increment">Increment</button>
-    <button @click="goToNextScene">Next Scene</button>
+    <button @click="count++">Increment</button>
+    <button v-for="scene in scenes" @click="navigateTo(scene)">{{ scene }}</button>
+</div>
+
+<!-- Or use component factories -->
+<div v-scope="Counter({ initialCount: 10 })">
+    <button @click="decrement">-</button>
+    <span>{{ count }}</span>
+    <button @click="increment">+</button>
 </div>
 ```
 
@@ -326,11 +343,13 @@ Add this JavaScript function to run on Document Load:
 
 ```javascript
 function HypeDocumentLoad(hypeDocument, element, event) {
-    // Add scene navigation state to hypeDocument
-    hypeDocument.scenes = ['Scene 1', 'Scene 2', 'Scene 3'];
-    hypeDocument.currentScene = hypeDocument.currentSceneName();
+    hypeDocument.customData = hypeDocument.customData || {};
 
-    hypeDocument.navigateTo = function(sceneName) {
+    // Add scene navigation data
+    hypeDocument.customData.scenes = ['Scene 1', 'Scene 2', 'Scene 3'];
+    hypeDocument.customData.currentScene = hypeDocument.currentSceneName();
+
+    hypeDocument.customData.navigateTo = function(sceneName) {
         hypeDocument.showSceneNamed(sceneName, hypeDocument.kSceneTransitionCrossfade, 0.5);
         this.currentScene = sceneName;
     };
@@ -355,10 +374,12 @@ HTML in a Hype element:
 
 ```javascript
 function HypeDocumentLoad(hypeDocument, element, event) {
-    hypeDocument.count = 0;
-    hypeDocument.isAnimating = false;
+    hypeDocument.customData = hypeDocument.customData || {};
 
-    hypeDocument.incrementWithAnimation = function() {
+    hypeDocument.customData.count = 0;
+    hypeDocument.customData.isAnimating = false;
+
+    hypeDocument.customData.incrementWithAnimation = function() {
         this.count++;
         this.isAnimating = true;
         hypeDocument.startTimelineNamed('CounterPulse');
@@ -383,12 +404,14 @@ HTML in a Hype element:
 
 ### Example 6: Reusable Component Pattern
 
-You can create component factory functions directly in your HypeDocumentLoad:
+You can create component factory functions in customData:
 
 ```javascript
 function HypeDocumentLoad(hypeDocument, element, event) {
+    hypeDocument.customData = hypeDocument.customData || {};
+
     // Create a Counter component factory
-    hypeDocument.Counter = function(props) {
+    hypeDocument.customData.Counter = function(props) {
         return {
             count: props.initialCount || 0,
             increment() {
@@ -401,7 +424,7 @@ function HypeDocumentLoad(hypeDocument, element, event) {
     };
 
     // Create a Card component factory
-    hypeDocument.Card = function(props) {
+    hypeDocument.customData.Card = function(props) {
         return {
             title: props.title || 'Card Title',
             content: props.content || 'Card content',
@@ -433,34 +456,39 @@ Use in HTML:
 
 ## Best Practices
 
-### 1. Initialize on Document Load
+### 1. Always Initialize customData
 
-Set up your reactive state and methods when your Hype document loads:
+Set up your reactive state and methods in customData when your Hype document loads:
 
 ```javascript
 function HypeDocumentLoad(hypeDocument, element, event) {
+    // Always initialize customData first
+    hypeDocument.customData = hypeDocument.customData || {};
+
     // Add reactive state
-    hypeDocument.count = 0;
-    hypeDocument.user = { name: '', email: '' };
+    hypeDocument.customData.count = 0;
+    hypeDocument.customData.user = { name: '', email: '' };
 
     // Add methods
-    hypeDocument.increment = function() {
+    hypeDocument.customData.increment = function() {
         this.count++;
     };
 
     // Create component factories
-    hypeDocument.Modal = function(props) { /* ... */ };
+    hypeDocument.customData.Modal = function(props) { /* ... */ };
 }
 ```
 
-### 2. Use hypeDocument for Timeline Integration
+### 2. Access Hype API via Closure
 
-When you need Vue state to control Hype animations, add methods to hypeDocument:
+Component factories can access hypeDocument via closure for timeline integration:
 
 ```javascript
 function HypeDocumentLoad(hypeDocument, element, event) {
-    hypeDocument.playIntro = function() {
-        hypeDocument.startTimelineNamed('Intro');
+    hypeDocument.customData = hypeDocument.customData || {};
+
+    hypeDocument.customData.playIntro = function() {
+        hypeDocument.startTimelineNamed('Intro'); // hypeDocument accessible via closure
     };
 }
 ```
@@ -468,16 +496,16 @@ function HypeDocumentLoad(hypeDocument, element, event) {
 ### 3. Clean Separation of Concerns
 
 - Use Hype for animations and layout
-- Use Vue for interactivity and state management
-- Use hypeDocument properties to bridge between them
+- Use Vue (via customData) for interactivity and state management
+- Use closures to bridge between them
 
 ### 4. Leverage Component Reusability
 
-Create component factory functions on hypeDocument for UI patterns you use frequently:
+Create component factory functions in customData for UI patterns you use frequently:
 
 ```javascript
-hypeDocument.Modal = function(props) { /* ... */ };
-hypeDocument.Tooltip = function(props) { /* ... */ };
+hypeDocument.customData.Modal = function(props) { /* ... */ };
+hypeDocument.customData.Tooltip = function(props) { /* ... */ };
 ```
 
 ### 5. Keep Scope Small
@@ -538,7 +566,7 @@ Benefits:
 
 ### Persisting State Across Scenes
 
-If you need to maintain state when switching scenes, **don't use local `v-scope` state**. Instead, use the `hypeDocument` object or a global store:
+If you need to maintain state when switching scenes, **don't use local `v-scope` state**. Instead, use `customData`:
 
 **❌ Wrong - State lost on scene change:**
 ```html
@@ -550,7 +578,8 @@ If you need to maintain state when switching scenes, **don't use local `v-scope`
 **✅ Correct - State persists:**
 ```javascript
 // In HypeDocumentLoad
-hypeDocument.persistentCount = 0;
+hypeDocument.customData = hypeDocument.customData || {};
+hypeDocument.customData.persistentCount = 0;
 ```
 
 ```html
@@ -562,7 +591,8 @@ hypeDocument.persistentCount = 0;
 **✅ Also correct - Using a component factory:**
 ```javascript
 // In HypeDocumentLoad
-hypeDocument.Counter = function() {
+hypeDocument.customData = hypeDocument.customData || {};
+hypeDocument.customData.Counter = function() {
     return {
         count: 0,
         increment() {
@@ -578,7 +608,7 @@ hypeDocument.Counter = function() {
 </div>
 ```
 
-**Note:** Component scope state is reset when you revisit a scene. Only `hypeDocument` properties persist.
+**Note:** Component scope state is reset when you revisit a scene. Only `customData` properties persist.
 
 ### Working with Symbols
 
@@ -593,17 +623,16 @@ HypePetiteVue works perfectly with Hype symbols. You can add Vue directives to s
 **Key:** `@vue:unmounted`
 **Value:** `console.log('Symbol unmounted!')`
 
-You can also reference the `hypeDocument` scope directly:
+You can also reference customData properties directly:
 ```javascript
-// Add to hypeDocument in HypeDocumentLoad
-hypeDocument.customData = {
-    count: 0
-};
+// Add to customData in HypeDocumentLoad
+hypeDocument.customData = hypeDocument.customData || {};
+hypeDocument.customData.count = 0;
 ```
 
 Then in your symbol's innerHTML:
 ```html
-<button @click="customData.count++">{{ customData.count }}</button>
+<button @click="count++">{{ count }}</button>
 ```
 
 ---
@@ -694,21 +723,23 @@ HypePetiteVue.ready().then(() => {
 
 **Problem:** My data resets when I switch scenes.
 
-**Solution:** Add state to `hypeDocument`, not to local `v-scope`:
+**Solution:** Add state to `customData`, not to local `v-scope`:
 
 ```javascript
 // In HypeDocumentLoad
-hypeDocument.myData = { count: 0 };
+hypeDocument.customData = hypeDocument.customData || {};
+hypeDocument.customData.myData = { count: 0 };
 ```
 
 ### Timeline Not Triggering
 
 **Problem:** Calling Hype timelines from Vue doesn't work.
 
-**Solution:** Add methods to `hypeDocument` and call Hype APIs directly:
+**Solution:** Add methods to `customData` that access hypeDocument via closure:
 
 ```javascript
-hypeDocument.playAnimation = function() {
+hypeDocument.customData = hypeDocument.customData || {};
+hypeDocument.customData.playAnimation = function() {
     hypeDocument.startTimelineNamed('Main Timeline');
 };
 ```
@@ -739,6 +770,15 @@ Petite Vue supports all modern browsers. IE11 is not supported.
 ---
 
 ## Version History
+
+### v1.1.0 (2025) - BREAKING CHANGE
+- **Breaking:** Use `hypeDocument.customData` as Vue scope instead of raw `hypeDocument`
+- Fixes "Illegal constructor" error caused by Hype internals in reactive system
+- Simplified to 162 lines - removed all complexity that wasn't solving core issues
+- Removed: FOUC prevention, pending mounts tracking, document hiding
+- `customData` is Hype's standard property for user data - safe for reactivity
+- Users must now add Vue data/functions to `hypeDocument.customData`
+- Migration: Change `hypeDocument.foo = ...` to `hypeDocument.customData.foo = ...`
 
 ### v1.0.3 (2025)
 - Fix race condition where scene mount attempts before app initialization completes
