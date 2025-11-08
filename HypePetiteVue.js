@@ -151,10 +151,22 @@
                 }
 
                 console.log('[HypePetiteVue] Mounting app on scene container');
-                hypeDocument.$app.mount(element);
 
-                // Show the document container now that mounting is complete
-                this._showDocumentContainer(hypeDocument.documentId());
+                // Use requestAnimationFrame to ensure DOM is ready before mounting
+                // This prevents "Illegal constructor" errors when Hype is still setting up the scene
+                requestAnimationFrame(() => {
+                    try {
+                        hypeDocument.$app.mount(element);
+                        console.log('[HypePetiteVue] App mounted successfully');
+
+                        // Show the document container now that mounting is complete
+                        this._showDocumentContainer(hypeDocument.documentId());
+                    } catch (error) {
+                        console.error('[HypePetiteVue] Error mounting app:', error);
+                        // Show container even if mount fails to prevent permanent hiding
+                        this._showDocumentContainer(hypeDocument.documentId());
+                    }
+                });
             },
 
             /**
