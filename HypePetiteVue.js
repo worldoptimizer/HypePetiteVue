@@ -1,5 +1,5 @@
 /*!
- * HypePetiteVue v1.0.0
+ * HypePetiteVue v1.0.1
  * Copyright (c) 2025
  * MIT License
  *
@@ -12,12 +12,10 @@
 
     // Configuration
     const PETITE_VUE_CDN = 'https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.iife.js';
-    const PETITE_VUE_ES_CDN = 'https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js';
 
     /**
      * Inject CSS to hide unrendered Petite Vue content
      * Prevents FOUC (Flash of Unstyled Content) before Petite Vue mounts
-     * Only hides elements with explicit v-cloak attribute to avoid breaking Hype IDE
      */
     function injectCloakStyles() {
         if (!document.getElementById('hype-petite-vue-cloak-styles')) {
@@ -41,70 +39,10 @@
      */
     if (!window.HypePetiteVue) {
         window.HypePetiteVue = {
-            version: '1.0.0',
-            instances: new Map(),
-            stores: {},
-            components: {},
+            version: '1.0.1',
             _petiteVueLoaded: false,
             _loadingPromise: null,
-            _globalAppMounted: false,
-            _shouldMountWhenReady: false,
-
-            /**
-             * Initialize HypePetiteVue for a Hype document
-             * @param {Object} hypeDocument - The Hype document object
-             * @param {Object} element - The HTML element
-             * @param {Object} event - The event object
-             * @returns {Promise} Promise that resolves when Petite Vue is initialized
-             */
-            init: function(hypeDocument, element, event) {
-                const docId = hypeDocument.documentId();
-
-                return this.loadPetiteVue().then(() => {
-                    console.log('[HypePetiteVue] Initialized for document:', docId);
-
-                    // If HypeScenePrepareForDisplay already fired and set the flag, mount now
-                    if (this._shouldMountWhenReady && !this._globalAppMounted) {
-                        console.log('[HypePetiteVue] Mounting after load (HypeScenePrepareForDisplay already fired)');
-                        // Small delay to allow other HypeDocumentLoad callbacks to register stores/components
-                        setTimeout(() => this._autoMount(), 10);
-                    }
-
-                    return this;
-                });
-            },
-
-            /**
-             * Auto-mount Petite Vue if not already mounted
-             * @private
-             */
-            _autoMount: function() {
-                console.log('[HypePetiteVue] _autoMount called, PetiteVue:', typeof window.PetiteVue, '_globalAppMounted:', this._globalAppMounted, 'stores:', Object.keys(this.stores));
-
-                if (typeof window.PetiteVue !== 'undefined' && !this._globalAppMounted) {
-                    console.log('[HypePetiteVue] Auto-mounting Petite Vue globally');
-
-                    // Create app with stores and components if they exist
-                    const appConfig = {};
-                    if (Object.keys(this.stores).length > 0) {
-                        appConfig.$store = this.stores;
-                    }
-                    Object.assign(appConfig, this.components);
-
-                    console.log('[HypePetiteVue] App config:', appConfig);
-                    window.PetiteVue.createApp(appConfig).mount();
-                    this._globalAppMounted = true;
-
-                    // Mark all v-scope elements as mounted to show them (remove FOUC)
-                    setTimeout(() => {
-                        document.querySelectorAll('[v-scope]').forEach(el => {
-                            el.setAttribute('data-v-mounted', '');
-                        });
-                    }, 0);
-
-                    console.log('[HypePetiteVue] Petite Vue mounted and processing v-scope directives');
-                }
-            },
+            _pendingMounts: new Map(), // Track scenes waiting to mount
 
             /**
              * Load Petite Vue library dynamically
@@ -126,10 +64,9 @@
                     script.onload = () => {
                         this._petiteVueLoaded = true;
                         console.log('[HypePetiteVue] Petite Vue loaded successfully');
-                        console.log('[HypePetiteVue] PetiteVue global available:', typeof window.PetiteVue);
-                        if (typeof window.PetiteVue === 'undefined') {
-                            console.error('[HypePetiteVue] WARNING: PetiteVue global not found after script load!');
-                        }
+
+                        // Process any pending mounts
+                        this._processPendingMounts();
                         resolve();
                     };
                     script.onerror = () => {
@@ -142,161 +79,85 @@
             },
 
             /**
-             * Create a Petite Vue app for a specific element
-             * @param {Object} config - Configuration object with scope data and components
-             * @param {HTMLElement} mountElement - Optional element to mount on (defaults to document)
-             * @returns {Promise} Promise that resolves with the created app
+             * Process pending mounts that were queued before Petite Vue loaded
+             * @private
              */
-            createApp: function(config, mountElement) {
-                return this.loadPetiteVue().then(() => {
-                    if (typeof window.PetiteVue === 'undefined') {
-                        throw new Error('PetiteVue is not available');
-                    }
-
-                    // Merge stores if they exist
-                    const appConfig = Object.assign({}, config);
-                    if (Object.keys(this.stores).length > 0) {
-                        appConfig.$store = this.stores;
-                    }
-
-                    // Merge components if they exist
-                    if (Object.keys(this.components).length > 0) {
-                        Object.assign(appConfig, this.components);
-                    }
-
-                    const app = window.PetiteVue.createApp(appConfig);
-
-                    if (mountElement) {
-                        app.mount(mountElement);
-                        console.log('[HypePetiteVue] App mounted on element:', mountElement);
-                    } else {
-                        app.mount();
-                        console.log('[HypePetiteVue] App mounted globally');
-                    }
-
-                    return app;
+            _processPendingMounts: function() {
+                console.log('[HypePetiteVue] Processing pending mounts:', this._pendingMounts.size);
+                this._pendingMounts.forEach((element, hypeDocument) => {
+                    this._mountApp(hypeDocument, element);
                 });
+                this._pendingMounts.clear();
             },
 
             /**
-             * Create a reactive store for global state management
-             * @param {string} name - Store name
-             * @param {Object} state - Initial state object
-             * @returns {Object} Reactive store object
+             * Create and mount Petite Vue app for a Hype document
+             * @private
              */
-            createStore: function(name, state) {
-                return this.loadPetiteVue().then(() => {
-                    if (typeof window.PetiteVue === 'undefined' || typeof window.PetiteVue.reactive === 'undefined') {
-                        throw new Error('PetiteVue.reactive is not available');
-                    }
-
-                    const store = window.PetiteVue.reactive(state);
-                    this.stores[name] = store;
-                    console.log('[HypePetiteVue] Store created:', name);
-                    return store;
-                });
-            },
-
-            /**
-             * Register a component for use in Petite Vue templates
-             * @param {string} name - Component name
-             * @param {Function} component - Component factory function
-             */
-            registerComponent: function(name, component) {
-                this.components[name] = component;
-                console.log('[HypePetiteVue] Component registered:', name);
-            },
-
-            /**
-             * Mount Petite Vue on a specific Hype element
-             * @param {Object} hypeDocument - The Hype document object
-             * @param {string} elementId - Hype element ID
-             * @param {Object} scope - Scope data for the element
-             * @returns {Promise} Promise that resolves when mounted
-             */
-            mountOnElement: function(hypeDocument, elementId, scope) {
-                const element = hypeDocument.getElementById(elementId);
-                if (!element) {
-                    console.error('[HypePetiteVue] Element not found:', elementId);
-                    return Promise.reject(new Error('Element not found: ' + elementId));
+            _mountApp: function(hypeDocument, element) {
+                if (!hypeDocument.$app) {
+                    console.error('[HypePetiteVue] App not initialized for document');
+                    return;
                 }
 
-                return this.createApp(scope, element);
+                console.log('[HypePetiteVue] Mounting app on scene container');
+                hypeDocument.$app.mount(element);
             },
 
             /**
-             * Create a Hype-aware reactive store that can interact with Hype timelines
+             * Initialize Petite Vue app for a Hype document
+             * Called once per document in HypeDocumentLoad
              * @param {Object} hypeDocument - The Hype document object
-             * @param {Object} state - Initial state
-             * @param {string} name - Optional store name (defaults to using as root $store)
-             * @returns {Promise} Promise that resolves with reactive store
+             * @returns {Promise} Promise that resolves when initialized
              */
-            createHypeStore: function(hypeDocument, state, name) {
+            initDocument: function(hypeDocument) {
                 return this.loadPetiteVue().then(() => {
-                    if (typeof window.PetiteVue === 'undefined' || typeof window.PetiteVue.reactive === 'undefined') {
-                        throw new Error('PetiteVue.reactive is not available');
+                    // Call user's custom HypeDocumentLoad if it exists
+                    if (typeof hypeDocument.functions !== 'undefined' &&
+                        typeof hypeDocument.functions().HypeDocumentLoad === 'function') {
+                        hypeDocument.functions().HypeDocumentLoad(hypeDocument, null, null);
                     }
 
-                    const hypeAwareState = Object.assign({}, state, {
-                        // Add Hype utility methods to the state
-                        $hype: {
-                            document: hypeDocument,
-                            showScene: (sceneName, transition, duration) => {
-                                hypeDocument.showSceneNamed(sceneName, transition, duration);
-                            },
-                            startTimeline: (timelineName) => {
-                                hypeDocument.startTimelineNamed(timelineName);
-                            },
-                            pauseTimeline: (timelineName) => {
-                                hypeDocument.pauseTimelineNamed(timelineName);
-                            },
-                            continueTimeline: (timelineName) => {
-                                hypeDocument.continueTimelineNamed(timelineName);
-                            },
-                            goToTime: (timeInSeconds, timelineName) => {
-                                hypeDocument.goToTimeInTimelineNamed(timeInSeconds, timelineName);
-                            },
-                            getElementById: (elementId) => {
-                                return hypeDocument.getElementById(elementId);
-                            },
-                            setElementProperty: (element, property, value, duration, timing) => {
-                                hypeDocument.setElementProperty(element, property, value, duration, timing);
-                            }
-                        }
-                    });
-
-                    const reactiveStore = window.PetiteVue.reactive(hypeAwareState);
-
-                    // Register store - if no name provided, merge into root $store
-                    if (name) {
-                        this.stores[name] = reactiveStore;
-                        console.log('[HypePetiteVue] Hype-aware store created:', name);
-                    } else {
-                        // Merge into root $store for direct access
-                        Object.assign(this.stores, reactiveStore);
-                        console.log('[HypePetiteVue] Hype-aware store created and merged into $store');
-                    }
-
-                    // Trigger auto-mount immediately if not already mounted
-                    if (this._petiteVueLoaded && !this._globalAppMounted) {
-                        console.log('[HypePetiteVue] Scheduling _autoMount from createHypeStore');
-                        // Use immediate next tick to ensure DOM is ready
-                        setTimeout(() => this._autoMount(), 0);
-                    }
-
-                    return reactiveStore;
+                    // Create the app once per document
+                    // The app is passed the hypeDocument as its scope
+                    hypeDocument.$app = window.PetiteVue.createApp(hypeDocument);
+                    console.log('[HypePetiteVue] App created for document:', hypeDocument.documentId());
                 });
             },
 
             /**
-             * Cleanup Petite Vue instances for a scene
-             * @param {string} sceneId - Scene identifier
+             * Mount app on scene display
+             * @param {Object} hypeDocument - The Hype document object
+             * @param {HTMLElement} element - The scene container element
              */
-            cleanup: function(sceneId) {
-                if (this.instances.has(sceneId)) {
-                    this.instances.delete(sceneId);
-                    console.log('[HypePetiteVue] Cleaned up scene:', sceneId);
+            mountScene: function(hypeDocument, element) {
+                if (!this._petiteVueLoaded) {
+                    // Queue this mount for when Petite Vue loads
+                    console.log('[HypePetiteVue] Petite Vue not loaded yet, queuing mount');
+                    this._pendingMounts.set(hypeDocument, element);
+                    return;
                 }
+
+                this._mountApp(hypeDocument, element);
+            },
+
+            /**
+             * Unmount app and clean up scene
+             * CRITICAL: Clone and replace element so Hype can restore innerHTML on next visit
+             * @param {Object} hypeDocument - The Hype document object
+             * @param {HTMLElement} element - The scene container element
+             */
+            unmountScene: function(hypeDocument, element) {
+                if (!hypeDocument.$app) {
+                    return;
+                }
+
+                console.log('[HypePetiteVue] Unmounting app from scene');
+                hypeDocument.$app.unmount();
+
+                // CRITICAL: Clone and replace the element to reset it
+                // This allows Hype to restore the original innerHTML when the scene is revisited
+                element.parentNode.replaceChild(element.cloneNode(true), element);
             },
 
             /**
@@ -318,47 +179,35 @@
     }
 
     /**
-     * Hype Document Load event handler
-     * Automatically initialize HypePetiteVue when a Hype document loads
+     * Hype Event Listeners
      */
     if ("HYPE_eventListeners" in window === false) {
         window.HYPE_eventListeners = [];
     }
 
+    // HypeDocumentLoad: Initialize the app once per document
     window.HYPE_eventListeners.push({
         type: "HypeDocumentLoad",
         callback: function(hypeDocument, element, event) {
-            // Auto-initialize if window.HypePetiteVueAutoInit is set to true
             if (window.HypePetiteVueAutoInit !== false) {
-                HypePetiteVue.init(hypeDocument, element, event);
+                HypePetiteVue.initDocument(hypeDocument);
             }
         }
     });
 
+    // HypeScenePrepareForDisplay: Mount the app on the scene
     window.HYPE_eventListeners.push({
         type: "HypeScenePrepareForDisplay",
         callback: function(hypeDocument, element, event) {
-            console.log('[HypePetiteVue] HypeScenePrepareForDisplay - fired, _petiteVueLoaded:', HypePetiteVue._petiteVueLoaded);
-
-            // Set flag to mount when ready
-            HypePetiteVue._shouldMountWhenReady = true;
-
-            // If Petite Vue is already loaded, mount immediately
-            if (HypePetiteVue._petiteVueLoaded && !HypePetiteVue._globalAppMounted) {
-                console.log('[HypePetiteVue] HypeScenePrepareForDisplay - mounting immediately (Petite Vue already loaded)');
-                HypePetiteVue._autoMount();
-            } else if (!HypePetiteVue._petiteVueLoaded) {
-                console.log('[HypePetiteVue] HypeScenePrepareForDisplay - Petite Vue not loaded yet, will mount when ready');
-            }
+            HypePetiteVue.mountScene(hypeDocument, element);
         }
     });
 
+    // HypeSceneUnload: Unmount and clean up
     window.HYPE_eventListeners.push({
         type: "HypeSceneUnload",
         callback: function(hypeDocument, element, event) {
-            // Cleanup when scene unloads
-            const sceneId = hypeDocument.currentSceneName();
-            HypePetiteVue.cleanup(sceneId);
+            HypePetiteVue.unmountScene(hypeDocument, element);
         }
     });
 

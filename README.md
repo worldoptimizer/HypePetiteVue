@@ -621,6 +621,112 @@ Instead of one large v-scope, break into smaller reactive regions:
 
 ---
 
+## How Scene Persistence Works
+
+HypePetiteVue is designed to work seamlessly with Hype's scene management. Understanding how this works will help you build more reliable applications.
+
+### The Mount/Unmount Pattern
+
+When you switch between scenes in Hype, HypePetiteVue follows this lifecycle:
+
+1. **On Scene Load (HypeScenePrepareForDisplay)**
+   - HypePetiteVue mounts the Petite Vue app on the scene container
+   - Vue bindings become active and your directives start working
+
+2. **On Scene Unload (HypeSceneUnload)**
+   - HypePetiteVue unmounts the Petite Vue app
+   - The scene element is cloned and replaced to reset it to a clean state
+   - This allows Hype to restore the original innerHTML when you revisit the scene
+
+### Why Clone and Replace?
+
+**Critical insight:** Tumult Hype manages innerHTML restoration automatically. When you revisit a scene, Hype resets the innerHTML back to what it was in the editor.
+
+The old approach of trying to save and restore innerHTML manually fights against this. Instead, HypePetiteVue:
+- Lets Hype handle innerHTML restoration
+- Unmounts Vue cleanly to remove reactive bindings
+- Clones the element to reset any DOM changes Vue made
+- Re-mounts Vue when the scene is shown again
+
+This pattern ensures that:
+- Your scenes always start in a clean state
+- No stale Vue bindings or memory leaks
+- Works perfectly with Hype's scene management
+
+### One App Instance Per Document
+
+HypePetiteVue creates a **single Petite Vue app instance** per Hype document in the `HypeDocumentLoad` event. This app is then mounted and unmounted as you navigate between scenes.
+
+Benefits:
+- Efficient: No overhead of creating/destroying apps
+- Consistent: State in `hypeDocument` persists across scenes
+- Simple: One app, multiple mounts
+
+### Persisting State Across Scenes
+
+If you need to maintain state when switching scenes, **don't use local `v-scope` state**. Instead, use the `hypeDocument` object or a global store:
+
+**❌ Wrong - State lost on scene change:**
+```html
+<div v-scope="{ count: 0 }">
+    <button @click="count++">{{ count }}</button>
+</div>
+```
+
+**✅ Correct - State persists:**
+```javascript
+// In HypeDocumentLoad
+hypeDocument.persistentCount = 0;
+```
+
+```html
+<div v-scope>
+    <button @click="persistentCount++">{{ persistentCount }}</button>
+</div>
+```
+
+**✅ Also correct - Using a Hype Store:**
+```javascript
+// In HypeDocumentLoad
+HypePetiteVue.createHypeStore(hypeDocument, {
+    count: 0
+});
+```
+
+```html
+<div v-scope>
+    <button @click="$store.count++">{{ $store.count }}</button>
+</div>
+```
+
+### Working with Symbols
+
+HypePetiteVue works perfectly with Hype symbols. You can add Vue directives to symbols using the "Additional HTML Attributes" feature in the Identity Inspector:
+
+**Key:** `v-scope`
+**Value:** (leave empty or provide scope data)
+
+**Key:** `@vue:mounted`
+**Value:** `console.log('Symbol mounted!')`
+
+**Key:** `@vue:unmounted`
+**Value:** `console.log('Symbol unmounted!')`
+
+You can also reference the `hypeDocument` scope directly:
+```javascript
+// Add to hypeDocument in HypeDocumentLoad
+hypeDocument.customData = {
+    count: 0
+};
+```
+
+Then in your symbol's innerHTML:
+```html
+<button @click="customData.count++">{{ customData.count }}</button>
+```
+
+---
+
 ## Advanced Usage
 
 ### Custom Petite Vue Version
