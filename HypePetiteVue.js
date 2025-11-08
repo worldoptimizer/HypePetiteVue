@@ -1,5 +1,5 @@
 /*!
- * HypePetiteVue v1.0.3
+ * HypePetiteVue v1.0.4
  * Copyright (c) 2025
  * MIT License
  *
@@ -42,7 +42,7 @@
      */
     if (!window.HypePetiteVue) {
         window.HypePetiteVue = {
-            version: '1.0.3',
+            version: '1.0.4',
             _petiteVueLoaded: false,
             _loadingPromise: null,
             _pendingMounts: new Map(), // Track scenes waiting to mount
@@ -151,22 +151,19 @@
                 }
 
                 console.log('[HypePetiteVue] Mounting app on scene container');
+                console.log('[HypePetiteVue] Element:', element);
+                console.log('[HypePetiteVue] Element has v-scope:', element.querySelector('[v-scope]') !== null);
 
-                // Use requestAnimationFrame to ensure DOM is ready before mounting
-                // This prevents "Illegal constructor" errors when Hype is still setting up the scene
-                requestAnimationFrame(() => {
-                    try {
-                        hypeDocument.$app.mount(element);
-                        console.log('[HypePetiteVue] App mounted successfully');
+                try {
+                    hypeDocument.$app.mount(element);
+                    console.log('[HypePetiteVue] App mounted successfully');
+                } catch (error) {
+                    console.error('[HypePetiteVue] Error mounting app:', error);
+                    console.error('[HypePetiteVue] Error stack:', error.stack);
+                }
 
-                        // Show the document container now that mounting is complete
-                        this._showDocumentContainer(hypeDocument.documentId());
-                    } catch (error) {
-                        console.error('[HypePetiteVue] Error mounting app:', error);
-                        // Show container even if mount fails to prevent permanent hiding
-                        this._showDocumentContainer(hypeDocument.documentId());
-                    }
-                });
+                // Show the document container now that mounting is complete (or failed)
+                this._showDocumentContainer(hypeDocument.documentId());
             },
 
             /**
@@ -187,15 +184,24 @@
 
                 return this.loadPetiteVue().then(() => {
                     // Call user's custom HypeDocumentLoad if it exists
+                    // This allows user to add properties/methods to hypeDocument before app creation
                     if (typeof hypeDocument.functions !== 'undefined' &&
                         typeof hypeDocument.functions().HypeDocumentLoad === 'function') {
                         hypeDocument.functions().HypeDocumentLoad(hypeDocument, element, null);
                     }
 
                     // Create the app once per document
-                    // The app is passed the hypeDocument as its scope
-                    hypeDocument.$app = window.PetiteVue.createApp(hypeDocument);
-                    console.log('[HypePetiteVue] App created for document:', hypeDocument.documentId());
+                    // Try to create with hypeDocument as scope first (for compatibility with original pattern)
+                    try {
+                        hypeDocument.$app = window.PetiteVue.createApp(hypeDocument);
+                        console.log('[HypePetiteVue] App created with hypeDocument scope for document:', hypeDocument.documentId());
+                    } catch (error) {
+                        // If that fails (due to hypeDocument having non-reactive properties),
+                        // create without a global scope - users can still use v-scope with local scopes
+                        console.warn('[HypePetiteVue] Could not create app with hypeDocument scope, creating without scope:', error);
+                        hypeDocument.$app = window.PetiteVue.createApp();
+                        console.log('[HypePetiteVue] App created without global scope for document:', hypeDocument.documentId());
+                    }
 
                     // Process any pending mount for this document
                     // This handles the case where HypeScenePrepareForDisplay fired before the app was created
