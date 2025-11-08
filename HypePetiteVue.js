@@ -119,14 +119,18 @@
 
             HypePetiteVue.loadPetiteVue().then(() => {
                 // Call user's custom HypeDocumentLoad if it exists
+                // User should add Vue data/functions to hypeDocument.customData
                 if (typeof hypeDocument.functions !== 'undefined' &&
                     typeof hypeDocument.functions().HypeDocumentLoad === 'function') {
                     hypeDocument.functions().HypeDocumentLoad(hypeDocument, element, event);
                 }
 
-                // Create app - pass hypeDocument which user may have modified in their HypeDocumentLoad
-                hypeDocument.$app = window.PetiteVue.createApp(hypeDocument);
-                console.log('[HypePetiteVue] App created for document');
+                // Create app with hypeDocument.customData as scope
+                // customData is Hype's standard property for user data - safe to make reactive
+                // This avoids reactivity issues with hypeDocument internals
+                const vueScope = hypeDocument.customData || {};
+                hypeDocument.$app = window.PetiteVue.createApp(vueScope);
+                console.log('[HypePetiteVue] App created with customData scope');
             });
         }
     });
