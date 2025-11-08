@@ -1,6 +1,6 @@
 /*!
  * HypePetiteVue v1.1.0
- * Copyright (c) 2025
+ * Copyright (c) 2025 Max Ziebell
  * MIT License
  *
  * Integration layer for using Petite Vue with Tumult Hype
@@ -32,6 +32,44 @@
     injectCloakStyles();
 
     /**
+     * Symbol state cache - stores scope state per symbol instance
+     */
+    const symbolStateCache = new Map();
+
+    /**
+     * Get symbol instance ID from element
+     */
+    function getSymbolInstanceId(element) {
+        // Check if element or parent has hype_symbol_instance attribute
+        let current = element;
+        while (current) {
+            if (current.getAttribute && current.getAttribute('hype_symbol_instance')) {
+                return current.getAttribute('hype_symbol_instance');
+            }
+            current = current.parentElement;
+        }
+        return null;
+    }
+
+    /**
+     * Create or restore symbol scope
+     */
+    function getOrCreateSymbolScope(symbolId, scopeFactory) {
+        if (!symbolId) return null;
+
+        if (!symbolStateCache.has(symbolId)) {
+            // Create new scope for this symbol instance
+            const newScope = typeof scopeFactory === 'function' ? scopeFactory() : scopeFactory || {};
+            symbolStateCache.set(symbolId, newScope);
+            console.log('[HypePetiteVue] Created new scope for symbol:', symbolId);
+            return newScope;
+        }
+
+        console.log('[HypePetiteVue] Restored cached scope for symbol:', symbolId);
+        return symbolStateCache.get(symbolId);
+    }
+
+    /**
      * HypePetiteVue - Extension for integrating Petite Vue with Tumult Hype
      */
     if (!window.HypePetiteVue) {
@@ -39,6 +77,7 @@
             version: '1.1.0',
             _petiteVueLoaded: false,
             _loadingPromise: null,
+            symbolStateCache: symbolStateCache, // Expose for debugging
 
             /**
              * Check if Petite Vue is already loaded
@@ -87,6 +126,24 @@
             },
 
             /**
+             * Clear cached state for a symbol (useful for reset)
+             */
+            clearSymbolState: function(symbolId) {
+                if (symbolStateCache.has(symbolId)) {
+                    symbolStateCache.delete(symbolId);
+                    console.log('[HypePetiteVue] Cleared state for symbol:', symbolId);
+                }
+            },
+
+            /**
+             * Clear all cached symbol states
+             */
+            clearAllSymbolStates: function() {
+                symbolStateCache.clear();
+                console.log('[HypePetiteVue] Cleared all symbol states');
+            },
+
+            /**
              * Get Petite Vue global
              */
             getPetiteVue: function() {
@@ -119,18 +176,15 @@
 
             HypePetiteVue.loadPetiteVue().then(() => {
                 // Call user's custom HypeDocumentLoad if it exists
-                // User should add Vue data/functions to hypeDocument.customData
                 if (typeof hypeDocument.functions !== 'undefined' &&
                     typeof hypeDocument.functions().HypeDocumentLoad === 'function') {
                     hypeDocument.functions().HypeDocumentLoad(hypeDocument, element, event);
                 }
 
-                // Create app with hypeDocument.customData as scope
-                // customData is Hype's standard property for user data - safe to make reactive
-                // This avoids reactivity issues with hypeDocument internals
-                const vueScope = hypeDocument.customData || {};
-                hypeDocument.$app = window.PetiteVue.createApp(vueScope);
-                console.log('[HypePetiteVue] App created with customData scope');
+                // Create app with hypeDocument as scope
+                // User can add properties/methods to hypeDocument in their HypeDocumentLoad
+                hypeDocument.$app = window.PetiteVue.createApp(hypeDocument);
+                console.log('[HypePetiteVue] App created for document');
             });
         }
     });
@@ -156,6 +210,49 @@
 
                 // Clone and replace to reset for next visit
                 element.parentNode.replaceChild(element.cloneNode(true), element);
+            }
+        }
+    });
+
+    // HypeSymbolLoad: Handle symbol-specific state caching
+    window.HYPE_eventListeners.push({
+        type: "HypeSymbolLoad",
+        callback: function(hypeDocument, element, event) {
+            const symbolInstance = event.symbolInstance;
+            if (!symbolInstance) return;
+
+            // Get or create unique ID for this symbol instance
+            const symbolId = symbolInstance.symbolName() + '_' + symbolInstance.symbolInstanceId();
+
+            // Store symbol ID on element for later retrieval
+            element.setAttribute('data-symbol-id', symbolId);
+
+            // Expose symbolInstance and cached state to hypeDocument
+            // This allows v-scope to access persistent symbol state
+            if (!hypeDocument.symbols) {
+                hypeDocument.symbols = {};
+            }
+
+            // Create getter for this symbol's cached state
+            Object.defineProperty(hypeDocument.symbols, symbolId, {
+                get: function() {
+                    return getOrCreateSymbolScope(symbolId, null);
+                },
+                configurable: true
+            });
+
+            console.log('[HypePetiteVue] Symbol loaded:', symbolId);
+        }
+    });
+
+    // HypeSymbolUnload: Optional cleanup
+    window.HYPE_eventListeners.push({
+        type: "HypeSymbolUnload",
+        callback: function(hypeDocument, element, event) {
+            // State is preserved in cache - only clean up references
+            const symbolId = element.getAttribute('data-symbol-id');
+            if (symbolId && hypeDocument.symbols) {
+                delete hypeDocument.symbols[symbolId];
             }
         }
     });
